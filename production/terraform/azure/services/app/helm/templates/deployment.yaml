@@ -1,0 +1,46 @@
+{{- range .Values.services }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}-app
+  namespace: {{ $.Values.namespace }}
+spec:
+  replicas: {{ .replicas }} 
+  selector:
+    matchLabels:
+      app: {{ .name }}-app
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}-app
+      annotations:
+        microsoft.containerinstance.virtualnode.ccepolicy: "cGFja2FnZSBwb2xpY3kKCmFwaV9zdm4gOj0gIjAuMTAuMCIKCm1vdW50X2RldmljZSA6PSB7ImFsbG93ZWQiOiB0cnVlfQptb3VudF9vdmVybGF5IDo9IHsiYWxsb3dlZCI6IHRydWV9CmNyZWF0ZV9jb250YWluZXIgOj0geyJhbGxvd2VkIjogdHJ1ZSwgImVudl9saXN0IjogbnVsbCwgImFsbG93X3N0ZGlvX2FjY2VzcyI6IHRydWV9CnVubW91bnRfZGV2aWNlIDo9IHsiYWxsb3dlZCI6IHRydWV9IAp1bm1vdW50X292ZXJsYXkgOj0geyJhbGxvd2VkIjogdHJ1ZX0KZXhlY19pbl9jb250YWluZXIgOj0geyJhbGxvd2VkIjogdHJ1ZSwgImVudl9saXN0IjogbnVsbH0KZXhlY19leHRlcm5hbCA6PSB7ImFsbG93ZWQiOiB0cnVlLCAiZW52X2xpc3QiOiBudWxsLCAiYWxsb3dfc3RkaW9fYWNjZXNzIjogdHJ1ZX0Kc2h1dGRvd25fY29udGFpbmVyIDo9IHsiYWxsb3dlZCI6IHRydWV9CnNpZ25hbF9jb250YWluZXJfcHJvY2VzcyA6PSB7ImFsbG93ZWQiOiB0cnVlfQpwbGFuOV9tb3VudCA6PSB7ImFsbG93ZWQiOiB0cnVlfQpwbGFuOV91bm1vdW50IDo9IHsiYWxsb3dlZCI6IHRydWV9CmdldF9wcm9wZXJ0aWVzIDo9IHsiYWxsb3dlZCI6IHRydWV9CmR1bXBfc3RhY2tzIDo9IHsiYWxsb3dlZCI6IHRydWV9CnJ1bnRpbWVfbG9nZ2luZyA6PSB7ImFsbG93ZWQiOiB0cnVlfQpsb2FkX2ZyYWdtZW50IDo9IHsiYWxsb3dlZCI6IHRydWV9CnNjcmF0Y2hfbW91bnQgOj0geyJhbGxvd2VkIjogdHJ1ZX0Kc2NyYXRjaF91bm1vdW50IDo9IHsiYWxsb3dlZCI6IHRydWV9Cg=="
+        microsoft.containerinstance.virtualnode.injectkubeproxy: "false"
+        microsoft.containerinstance.virtualnode.identity: "/subscriptions/7ca35580-fc67-469c-91a7-68b38569ca6e/resourceGroups/privacy-sandbox-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/privacysandbox"
+    spec:
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 168.63.129.16
+      containers:
+      - name: {{ .name }}
+        image: {{ $.Values.imageRegistry }}{{ .image }}
+        env:
+          {{- range $.Values.env }}
+          - name: {{ .name }}
+            value: {{ .value | quote }}
+          {{- end }}
+        ports:
+        - containerPort: {{ .containerPort }}
+        resources:
+          limits:
+            cpu: "2"
+            memory: 2Gi
+      nodeSelector:
+        type: virtual-kubelet
+      tolerations:
+      - key: "virtual-kubelet.io/provider"
+        operator: "Exists"
+        effect: "NoSchedule"
+---
+{{ end }}
