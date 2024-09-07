@@ -8,10 +8,6 @@ variable "environment" {
   type        = string
 }
 
-variable "frontend_service_name" {
-  type = string
-}
-
 variable "region" {
   description = "Azure region"
   type        = string

@@ -14,12 +14,8 @@
 
 ################ Common Setup ################
 
-locals {
-  frontend_service_name = "buyer"
-}
 module "resource_group" {
   source                = "../../services/resource_group"
-  frontend_service_name = local.frontend_service_name
   operator              = var.operator
   environment           = var.environment
   region                = var.region
@@ -28,7 +24,6 @@ module "resource_group" {
 module "networking" {
   source                = "../../services/networking"
   resource_group_name   = module.resource_group.name
-  frontend_service_name = local.frontend_service_name
   operator              = var.operator
   environment           = var.environment
   region                = var.region
@@ -41,8 +36,7 @@ module "networking" {
 module "aks" {
   source                = "../../services/aks"
   resource_group_id     = module.resource_group.id
-  resource_group_name   = module.resource_group.name
-  frontend_service_name = local.frontend_service_name
+  resource_group_name   = module.resource_group.name  
   operator              = var.operator
   environment           = var.environment
   region                = var.region
@@ -67,5 +61,11 @@ module "external_dns" {
   kubernetes_service_account = var.externaldns_kubernetes_service_account
   tenant_id                  = var.tenant_id
   subscription_id            = var.subscription_id
+}
+
+module "file_storage" {
+  source                = "../../services/file_storage"
+  resource_group_id     = module.resource_group.id
+  resource_group_name   = module.resource_group.name
 }
 

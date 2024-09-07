@@ -1,5 +1,5 @@
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.operator}-${var.environment}-${var.frontend_service_name}-${var.region}-vnet"
+  name                = "${var.operator}-${var.environment}-${var.region}-kv-service-vnet"
   address_space       = [var.vnet_address_space]
   location            = var.region
   resource_group_name = var.resource_group_name

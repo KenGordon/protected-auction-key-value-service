@@ -1,8 +1,8 @@
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                      = "${var.operator}-${var.environment}-${var.frontend_service_name}-${var.region}-aks"
+  name                      = "${var.operator}-${var.environment}-${var.region}-kv-service-aks"
   location                  = var.region
   resource_group_name       = var.resource_group_name
-  dns_prefix                = "${var.operator}-${var.environment}-${var.frontend_service_name}-${var.region}-aks-dns"
+  dns_prefix                = "${var.operator}-${var.environment}-${var.region}-kv-service-aks-dns"
   kubernetes_version        = var.kubernetes_version
   workload_identity_enabled = true
   oidc_issuer_enabled       = true
