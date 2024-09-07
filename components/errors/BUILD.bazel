@@ -17,7 +17,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 package(default_visibility = [
     "//components:__subpackages__",
     "//production/packaging:__subpackages__",
-    "//public/data_loading:__subpackages__",
+    "//public:__subpackages__",
 ])
 
 cc_library(
@@ -90,6 +90,7 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/time",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
         "@google_privacysandbox_servers_common//src/telemetry:tracing",
     ],
 )

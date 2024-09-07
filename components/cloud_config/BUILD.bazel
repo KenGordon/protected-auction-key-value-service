@@ -37,6 +37,28 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
+    ],
+)
+
+cc_library(
+    name = "parameter_client_gcp",
+    srcs = [
+        "parameter_client_gcp.cc",
+    ],
+    hdrs = [
+        "parameter_client.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
+        "@google_privacysandbox_servers_common//src/public/core/interface:errors",
+        "@google_privacysandbox_servers_common//src/public/cpio/interface/parameter_client",
     ],
 )
 
@@ -133,6 +155,7 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
     ],
 )
 
@@ -173,6 +196,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
         "@google_privacysandbox_servers_common//src/util/status_macro:status_macros",
     ],
 )

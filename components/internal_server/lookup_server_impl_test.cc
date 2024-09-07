@@ -15,15 +15,10 @@
 
 #include "components/internal_server/lookup_server_impl.h"
 
+#include <limits>
 #include <memory>
-#include <string>
-#include <utility>
-#include <vector>
 
-#include "components/data_server/cache/key_value_cache.h"
-#include "components/data_server/cache/mocks.h"
 #include "components/internal_server/mocks.h"
-#include "components/internal_server/string_padder.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/text_format.h"
 #include "grpcpp/grpcpp.h"
@@ -37,7 +32,6 @@ namespace {
 using google::protobuf::TextFormat;
 using testing::_;
 using testing::Return;
-using testing::ReturnRef;
 
 class LookupServiceImplTest : public ::testing::Test {
  protected:
@@ -139,6 +133,65 @@ TEST_F(LookupServiceImplTest, SecureLookupFailure) {
   grpc::ClientContext context;
   grpc::Status status =
       stub_->SecureLookup(&context, secure_lookup_request, &response);
+  EXPECT_EQ(status.error_code(), grpc::StatusCode::INTERNAL);
+}
+
+TEST_F(LookupServiceImplTest, InternalRunSetQueryUInt32_Success) {
+  InternalRunSetQueryUInt32Request request;
+  request.set_query("someset");
+  InternalRunSetQueryUInt32Response expected;
+  expected.add_elements(1000);
+  expected.add_elements(1001);
+  expected.add_elements(1002);
+  EXPECT_CALL(mock_lookup_, RunSetQueryUInt32(_, _)).WillOnce(Return(expected));
+  InternalRunSetQueryUInt32Response response;
+  grpc::ClientContext context;
+  grpc::Status status =
+      stub_->InternalRunSetQueryUInt32(&context, request, &response);
+  auto results = response.elements();
+  EXPECT_THAT(results, testing::UnorderedElementsAreArray({1000, 1001, 1002}));
+}
+
+TEST_F(LookupServiceImplTest, InternalRunSetQueryUInt32_LookupError_Failure) {
+  InternalRunSetQueryUInt32Request request;
+  request.set_query("fail|||||now");
+  EXPECT_CALL(mock_lookup_, RunSetQueryUInt32(_, _))
+      .WillOnce(Return(absl::UnknownError("Some error")));
+  InternalRunSetQueryUInt32Response response;
+  grpc::ClientContext context;
+  grpc::Status status =
+      stub_->InternalRunSetQueryUInt32(&context, request, &response);
+  EXPECT_EQ(status.error_code(), grpc::StatusCode::INTERNAL);
+}
+
+TEST_F(LookupServiceImplTest, InternalRunSetQueryUInt64_Success) {
+  InternalRunSetQueryUInt64Request request;
+  request.set_query("someset");
+  InternalRunSetQueryUInt64Response expected;
+  auto uint64_max = std::numeric_limits<uint64_t>::max();
+  expected.add_elements(uint64_max - 1000);
+  expected.add_elements(uint64_max - 1001);
+  expected.add_elements(uint64_max - 1002);
+  EXPECT_CALL(mock_lookup_, RunSetQueryUInt64(_, _)).WillOnce(Return(expected));
+  InternalRunSetQueryUInt64Response response;
+  grpc::ClientContext context;
+  grpc::Status status =
+      stub_->InternalRunSetQueryUInt64(&context, request, &response);
+  auto results = response.elements();
+  EXPECT_THAT(results,
+              testing::UnorderedElementsAreArray(
+                  {uint64_max - 1000, uint64_max - 1001, uint64_max - 1002}));
+}
+
+TEST_F(LookupServiceImplTest, InternalRunSetQueryUInt64_LookupError_Failure) {
+  InternalRunSetQueryUInt64Request request;
+  request.set_query("fail|||||now");
+  EXPECT_CALL(mock_lookup_, RunSetQueryUInt64(_, _))
+      .WillOnce(Return(absl::UnknownError("Some error")));
+  InternalRunSetQueryUInt64Response response;
+  grpc::ClientContext context;
+  grpc::Status status =
+      stub_->InternalRunSetQueryUInt64(&context, request, &response);
   EXPECT_EQ(status.error_code(), grpc::StatusCode::INTERNAL);
 }
 

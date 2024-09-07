@@ -10,7 +10,7 @@ To learn more about FLEDGE and the Key/Value server, take a look at the followin
 
 -   [FLEDGE Key/Value server explainer](https://github.com/WICG/turtledove/blob/main/FLEDGE_Key_Value_Server_API.md)
 -   [FLEDGE Key/Value server trust model](https://github.com/privacysandbox/fledge-docs/blob/main/key_value_service_trust_model.md)
--   [FLEDGE explainer](https://developer.chrome.com/en/docs/privacy-sandbox/fledge/)
+-   [FLEDGE explainer](https://developer.chrome.com/en/docs/privacy-sandbox/protected-audience/)
 -   [FLEDGE API developer guide](https://developer.chrome.com/blog/fledge-api/)
 
     > The instructions written in this document are for running a test Key/Value server that does
@@ -90,17 +90,25 @@ run into any Docker access errors, follow the instructions for
 ## Get the source code from GitHub
 
 The code for the FLEDGE Key/Value server is released on
-[GitHub](https://github.com/privacysandbox/fledge-key-value-service).
+[GitHub](https://github.com/privacysandbox/protected-auction-key-value-service).
 
 The main branch is under active development. For a more stable experience, please use the
-[latest release branch](https://github.com/privacysandbox/fledge-key-value-service/releases).
+[latest release branch](https://github.com/privacysandbox/protected-auction-key-value-service/releases).
 
 ## Build the Amazon Machine Image (AMI)
 
 From the Key/Value server repo folder, execute the following command:
 
+prod_mode (default mode)
+
 ```sh
 production/packaging/aws/build_and_test --with-ami us-east-1 --with-ami us-west-1
+```
+
+nonprod_mode
+
+```sh
+production/packaging/aws/build_and_test --with-ami us-east-1 --with-ami us-west-1 --mode nonprod
 ```
 
 The script will build the Enclave Image File (EIF), store it in an AMI, and upload the AMI. If the
@@ -141,6 +149,15 @@ export AWS_REGION=us-east-1  # For example.
 
 Then run `dist/aws/push_sqs` to push the SQS cleanup lambda image to AWS ECR.
 
+If you want to deploy a new version of SQS cleanup lambda image to clean up the expired sqs queues
+for KV servers that already had been deployed, after running `dist/aws/push_sqs` command, run the
+aws update-function-code command to notify the AWS lambda sqs clean up function to pick up the new
+lambda image.
+
+```shell
+aws lambda update-function-code --function-name kv-server-<environment>-sqs-cleanup --image-uri <aws account>.dkr.ecr.<region:us-east-1,us-west-1, etc>.amazonaws.com/sqs_lambda:latest
+```
+
 ## Set up Terraform
 
 The setup scripts require Terraform version 1.2.3. There is a helper script /tools/terraform, which
@@ -171,6 +188,21 @@ Update the `[[REGION]].backend.conf`:
 -   `key` - Set the filename that Terraform will use.
 -   `region` - Set the region where Terraform will run. This should be the same as the region in the
     variables defined.
+
+## Bidding an Auction services integration within the same VPC
+
+If you're integrating with Bidding and Auction services (B&A), you are likely going to be reusing
+the same VPC (virtual private cloud), subnets and AWS AppMesh (internal LB). In this case, you need
+the following changes:
+
+-   Make sure you are deploying the Key/Value server in the same region (specified by the `region`
+    terraform variable) and under the same AWS account as B&A servers.
+-   Set the terraform variable `use_existing_vpc` to `true`.
+-   Set the terraform variable `existing_vpc_environment` as the environment from B&A's deployment.
+-   Set the terraform variable `existing_vpc_operator` as the operator from B&A's deployment (for
+    example, `buyer1`).
+-   Optionally, you can set the terraform variable `enable_external_traffic` to `false` if you only
+    need to handle traffic from B&A servers.
 
 ## Apply Terraform
 
@@ -266,8 +298,9 @@ curl ${KV_SERVER_URL}/v1/getvalues?keys=foo1
 ```
 
 Since 7.47.0. curl by default send request via HTTP/2 protocol
-[curl-http2](https://curl.se/docs/http2.html). The terraform setup has the KV load balancer listen
-to HTTP/2 on port 8443 and HTTP1.1 on port 443. To query the server using http1.1 request protocol:
+[curl-http2](https://fuchsia.googlesource.com/third_party/curl/+/refs/heads/cobalt/docs/HTTP2.md).
+The terraform setup has the KV load balancer listen to HTTP/2 on port 8443 and HTTP1.1 on port 443.
+To query the server using http1.1 request protocol:
 
 ```sh
 KV_SERVER_URL="https://demo.kv-server.your-domain.example"
@@ -294,6 +327,16 @@ Or gRPC (using [grpcurl](https://github.com/fullstorydev/grpcurl)):
 ```sh
 grpcurl --protoset dist/query_api_descriptor_set.pb -d '{"raw_body": {"data": "'"$(echo -n $BODY|base64 -w 0)"'"}}' demo.kv-server.your-domain.example:8443 kv_server.v2.KeyValueService/GetValuesHttp
 ```
+
+If you deploy the Key/Value server under the same VPC as the B&A servers (terraform variable
+`use_existing_vpc` is set to `true`), you can ssh into the target B&A server (must be a server that
+is configured to query the Key/Value server), and then use the following command to place a query:
+
+```sh
+grpcurl --plaintext -d '{"kv_internal":"hi"}'  kv-server-<kv_environment>-appmesh-virtual-service.kv-server.privacysandboxdemo.app:50051 kv_server.v1.KeyValueService.GetValues
+```
+
+where `<kv_environment>` should be replaced by the Key/Value server's `environment`.
 
 ## SSH into EC2
 
@@ -348,6 +391,11 @@ instance id is `i-00f54fe22aa47367f`):
 mssh i-00f54fe22aa47367f --region us-east-1
 ```
 
+### Alternative: Connect via Session Manager
+
+Navigate to actual EC2 instance and connect via Session Manager by following the instructions on
+[Connect to your Amazon EC2 instance using Session Manager](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-methods.html)
+
 Once you have connected to the instance, run `ls` to see the content of the server. The output
 should look similar to something like this:
 
@@ -388,11 +436,15 @@ You should see an output similar to the following:
 
 ## Read the server log
 
-Most recent server logs can be read by executing the following command:
+Most recent server (`nonprod_mode`) console logs can be read by executing the following command:
 
 ```sh
 ENCLAVE_ID=$(nitro-cli describe-enclaves | jq -r ".[0].EnclaveID"); [ "$ENCLAVE_ID" != "null" ] && nitro-cli console --enclave-id ${ENCLAVE_ID}
 ```
+
+If `enable_otel_logger` parameter is set to true, KV server also exports server logs to Cloudwatch
+via otel collector, located at Cloudwatch log group `kv-server-log-group` More details about logging
+in `prod mode` and `nonprod mode` in ![developing the server](/docs/developing_the_server.md).
 
 ## Start the server
 

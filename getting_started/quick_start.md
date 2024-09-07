@@ -33,17 +33,18 @@ From the Key Value server repo folder, execute the following command:
 
 ```sh
 ./builders/tools/bazel-debian build //components/data_server/server:server \
-  --//:platform=local \
-  --//:instance=local
+  --config=local_instance \
+  --config=local_platform \
+  --config=nonprod_mode
 ```
 
 This will take a while for the first time. Subsequent builds can reuse cached progress.
 
 This command starts a build environment docker container and performs build from within.
 
--   The `--//:instance=local` means the server itself runs as a local binary instead of running on a
-    specific cloud.
--   The `--//:platform=local` means the server will integrate with local version of auxiliary
+-   The `--config=local_instance` means the server itself runs as a local binary instead of running
+    on a specific cloud.
+-   The `--config=local_platform` means the server will integrate with local version of auxiliary
     systems such as blob storage, parameter, etc. Other possible values are cloud-specific, in which
     case the server will use the corresponding cloud APIs to interact.
 
@@ -263,7 +264,7 @@ function getKeyGroupOutputs(hostname, udf_arguments) {
 }
 
 function HandleRequest(executionMetadata, ...udf_arguments) {
-  console.log(JSON.stringify(executionMetadata));
+  logMessage(JSON.stringify(executionMetadata));
   const keyGroupOutputs = getKeyGroupOutputs(executionMetadata.requestMetadata.hostname, udf_arguments);
   return {keyGroupOutputs, udfOutputApiVersion: 1};
 }

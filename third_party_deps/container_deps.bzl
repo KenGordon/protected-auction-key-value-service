@@ -55,7 +55,7 @@ def container_deps():
             # debug build so we can use 'sh'. Root, for gcp coordinators
             # auth to work
             "arch_hashes": {
-                "amd64": "6865ad48467c89c3c3524d4c426f52ad12d9ab7dec31fad31fae69da40eb6445",  # @runtime-cc-debian-amd64-repo-digests-replace-marker@
+                "amd64": "6865ad48467c89c3c3524d4c426f52ad12d9ab7dec31fad31fae69da40eb6445",
                 "arm64": "3c399c24b13bfef7e38257831b1bb05cbddbbc4d0327df87a21b6fbbb2480bc9",
             },
             "registry": "gcr.io",

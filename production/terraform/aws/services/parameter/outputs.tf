@@ -130,6 +130,14 @@ output "logging_verbosity_level_parameter_arn" {
   value = aws_ssm_parameter.logging_verbosity_level_parameter.arn
 }
 
+output "logging_verbosity_update_sns_arn_parameter_arn" {
+  value = aws_ssm_parameter.logging_verbosity_update_sns_arn_parameter.arn
+}
+
+output "logging_verbosity_backup_poll_frequency_secs_parameter_arn" {
+  value = aws_ssm_parameter.logging_verbosity_backup_poll_frequency_secs_parameter.arn
+}
+
 output "use_sharding_key_regex_parameter_arn" {
   value = aws_ssm_parameter.use_sharding_key_regex_parameter.arn
 }
@@ -142,6 +150,10 @@ output "udf_timeout_millis_parameter_arn" {
   value = aws_ssm_parameter.udf_timeout_millis_parameter.arn
 }
 
+output "udf_update_timeout_millis_parameter_arn" {
+  value = aws_ssm_parameter.udf_update_timeout_millis_parameter.arn
+}
+
 output "udf_min_log_level_parameter_arn" {
   value = aws_ssm_parameter.udf_min_log_level_parameter.arn
 }
@@ -152,4 +164,12 @@ output "enable_otel_logger_parameter_arn" {
 
 output "data_loading_blob_prefix_allowlist_parameter_arn" {
   value = aws_ssm_parameter.data_loading_blob_prefix_allowlist.arn
+}
+
+output "consented_debug_token_parameter_arn" {
+  value = (var.enable_consented_log_parameter_value) ? aws_ssm_parameter.consented_debug_token_parameter[0].arn : ""
+}
+
+output "enable_consented_log_parameter_arn" {
+  value = aws_ssm_parameter.enable_consented_log_parameter.arn
 }

@@ -42,6 +42,40 @@ class MockInstanceClient : public InstanceClient {
               (DescribeInstanceGroupInput & input), (override));
   MOCK_METHOD(absl::StatusOr<std::vector<InstanceInfo>>, DescribeInstances,
               (const absl::flat_hash_set<std::string>&), (override));
+  MOCK_METHOD(void, UpdateLogContext,
+              (privacy_sandbox::server_common::log::PSLogContext & log_context),
+              (override));
+};
+
+class MockParameterClient : public ParameterClient {
+ public:
+  MOCK_METHOD(absl::StatusOr<std::string>, GetParameter,
+              (std::string_view parameter_name,
+               std::optional<std::string> default_value),
+              (const, override));
+  MOCK_METHOD(absl::StatusOr<int32_t>, GetInt32Parameter,
+              (std::string_view parameter_name), (const, override));
+  MOCK_METHOD(absl::StatusOr<bool>, GetBoolParameter,
+              (std::string_view parameter_name), (const, override));
+  MOCK_METHOD(void, UpdateLogContext,
+              (privacy_sandbox::server_common::log::PSLogContext & log_context),
+              (override));
+};
+
+class MockParameterFetcher : public ParameterFetcher {
+ public:
+  MockParameterFetcher() : ParameterFetcher("environment", client_) {}
+  MOCK_METHOD(std::string, GetParameter,
+              (std::string_view parameter_suffix,
+               std::optional<std::string> default_value),
+              (const, override));
+  MOCK_METHOD(int32_t, GetInt32Parameter, (std::string_view parameter_suffix),
+              (const, override));
+  MOCK_METHOD(bool, GetBoolParameter, (std::string_view parameter_suffix),
+              (const, override));
+
+ private:
+  MockParameterClient client_;
 };
 
 class MockParameterClient : public ParameterClient {

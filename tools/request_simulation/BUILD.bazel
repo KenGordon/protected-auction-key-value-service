@@ -67,6 +67,7 @@ cc_library(
     name = "grpc_client",
     hdrs = ["grpc_client.h"],
     deps = [
+        "//components/data_server/request_handler:get_values_v2_handler",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_absl//absl/functional:any_invocable",
         "@com_google_absl//absl/status:statusor",
@@ -82,7 +83,7 @@ cc_library(
         "//components/util:sleepfor",
         "@com_github_grpc_grpc//test/core/util:grpc_test_util_base",
         "@com_google_absl//absl/log",
-        "@google_privacysandbox_servers_common//src/telemetry:metrics_recorder",
+        "@google_privacysandbox_servers_common//src/metric:context_map",
     ],
 )
 
@@ -120,7 +121,6 @@ cc_library(
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status:statusor",
-        "@google_privacysandbox_servers_common//src/telemetry:metrics_recorder",
         "@google_privacysandbox_servers_common//src/telemetry:tracing",
     ],
 )
@@ -129,7 +129,6 @@ cc_library(
     name = "request_simulation_parameter_fetcher",
     srcs = select({
         "//:aws_platform": ["request_simulation_parameter_fetcher_aws.cc"],
-        "//:azure_platform": ["request_simulation_parameter_fetcher_local.cc"],
         "//:gcp_platform": ["request_simulation_parameter_fetcher_gcp.cc"],
         "//:local_platform": ["request_simulation_parameter_fetcher_local.cc"],
     }),
@@ -160,6 +159,7 @@ cc_library(
         "//components/data/blob_storage:delta_file_notifier",
         "//components/data/common:change_notifier",
         "//components/data/common:thread_manager",
+        "//components/tools/util:configure_telemetry_tools",
         "//components/util:platform_initializer",
         "//components/util:version_linkstamp",
         "//public/data_loading/readers:riegeli_stream_io",
@@ -293,7 +293,6 @@ cc_test(
     size = "small",
     srcs = select({
         "//:aws_platform": [],
-        "//:azure_platform": ["request_simulation_system_local_test.cc"],
         "//:gcp_platform": [],
         "//:local_platform": ["request_simulation_system_local_test.cc"],
     }),

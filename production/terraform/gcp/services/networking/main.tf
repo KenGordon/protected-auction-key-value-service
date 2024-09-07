@@ -30,6 +30,37 @@ resource "google_compute_subnetwork" "kv_server" {
   ip_cidr_range = tolist(var.regions_cidr_blocks)[each.key]
 }
 
+data "google_compute_network" "existing_vpc_data" {
+  count = (var.use_existing_vpc) ? 1 : 0
+  name  = split("/", var.existing_vpc_id)[length(split("/", var.existing_vpc_id)) - 1]
+}
+
+data "google_compute_subnetwork" "all_subnetworks" {
+  for_each  = (var.use_existing_vpc) ? { for v in data.google_compute_network.existing_vpc_data[0].subnetworks_self_links : v => v } : {}
+  self_link = each.value
+}
+
+data "google_compute_subnetwork" "proxy_subnetworks" {
+  for_each = (var.use_existing_vpc) ? { for k, v in data.google_compute_subnetwork.all_subnetworks : k => v
+  if length(regexall(".*collector-proxy-subnet", v.name)) > 0 } : {}
+  name   = each.value.name
+  region = each.value.region
+}
+
+resource "google_compute_subnetwork" "proxy_subnets" {
+  for_each = (length(data.google_compute_subnetwork.proxy_subnetworks) != 0) ? {} : { for index, region in tolist(var.regions) : index => region }
+
+  ip_cidr_range = "10.${139 + each.key}.0.0/23"
+  name          = "${var.service}-${var.environment}-${each.value}-collector-proxy-subnet"
+  network       = var.use_existing_vpc ? var.existing_vpc_id : google_compute_network.kv_server[0].id
+  purpose       = "GLOBAL_MANAGED_PROXY"
+  region        = each.value
+  role          = "ACTIVE"
+  lifecycle {
+    ignore_changes = [ipv6_access_type]
+  }
+}
+
 resource "google_compute_router" "kv_server" {
   for_each = var.regions
 
@@ -54,11 +85,6 @@ resource "google_compute_router_nat" "kv_server" {
     enable = true
     filter = "ERRORS_ONLY"
   }
-}
-
-resource "google_compute_global_address" "collector" {
-  name       = "${var.collector_service_name}-${var.environment}-lb"
-  ip_version = "IPV4"
 }
 
 resource "google_compute_global_address" "kv_server" {
