@@ -19,13 +19,15 @@ load("@io_bazel_rules_go//go:def.bzl", "nogo")
 package(default_visibility = ["//:__subpackages__"])
 
 # Config settings to determine which platform the system will be built to run on
+# Use --config=VALUE_platform specified in .bazelrc instead of using this flag directly.
 # Example:
-# bazel build components/... --//:platform=aws
+# bazel build components/... --config=aws_platform
 string_flag(
     name = "platform",
     build_setting_default = "aws",
     values = [
         "aws",
+        "azure",
         "gcp",
         "local",
     ],
@@ -39,6 +41,16 @@ config_setting(
     visibility = [
         "//components:__subpackages__",
         "//tools:__subpackages__",
+    ],
+)
+
+config_setting(
+    name = "azure_platform",
+    flag_values = {
+        ":platform": "azure",
+    },
+    visibility = [
+        "//visibility:public",
     ],
 )
 
@@ -64,11 +76,16 @@ config_setting(
     ],
 )
 
+# Config settings to determine which instance the system will be built to run on
+# Use --configVALUE_instance specified in .bazelrc instead of using this flag directly.
+# Example:
+# bazel build components/... --config=aws_instance
 string_flag(
     name = "instance",
     build_setting_default = "aws",
     values = [
         "aws",
+        "azure",
         "gcp",
         "local",
     ],
@@ -83,6 +100,14 @@ config_setting(
         "//components:__subpackages__",
         "//tools:__subpackages__",
     ],
+)
+
+config_setting(
+    name = "azure_instance",
+    flag_values = {
+        ":instance": "azure",
+    },
+    visibility = ["//visibility:public"],
 )
 
 config_setting(
@@ -151,6 +176,22 @@ selects.config_setting_group(
     name = "aws_nonprod",
     match_all = [
         "//:aws_platform",
+        "//:nonprod_mode",
+    ],
+)
+
+selects.config_setting_group(
+    name = "azure_prod",
+    match_all = [
+        "//:azure_platform",
+        "//:prod_mode",
+    ],
+)
+
+selects.config_setting_group(
+    name = "azure_nonprod",
+    match_all = [
+        "//:azure_platform",
         "//:nonprod_mode",
     ],
 )

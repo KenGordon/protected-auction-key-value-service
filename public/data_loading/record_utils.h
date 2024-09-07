@@ -45,6 +45,20 @@ inline std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
+inline std::ostream& operator<<(std::ostream& os, const UInt32SetT& set_value) {
+  for (const auto& value : set_value.value) {
+    os << value << ", ";
+  }
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const UInt64SetT& set_value) {
+  for (const auto& value : set_value.value) {
+    os << value << ", ";
+  }
+  return os;
+}
+
 inline std::ostream& operator<<(std::ostream& os,
                                 const ValueUnion& value_union) {
   switch (value_union.type) {
@@ -54,6 +68,14 @@ inline std::ostream& operator<<(std::ostream& os,
     }
     case Value::StringSet: {
       os << *(reinterpret_cast<const StringSetT*>(value_union.value));
+      break;
+    }
+    case Value::UInt32Set: {
+      os << *(reinterpret_cast<const UInt32SetT*>(value_union.value));
+      break;
+    }
+    case Value::UInt64Set: {
+      os << *(reinterpret_cast<const UInt64SetT*>(value_union.value));
       break;
     }
     case Value::NONE: {
@@ -178,6 +200,18 @@ absl::StatusOr<std::string_view> MaybeGetRecordValue(
 // record.value is not a string set.
 template <>
 absl::StatusOr<std::vector<std::string_view>> MaybeGetRecordValue(
+    const KeyValueMutationRecord& record);
+
+// Returns the vector of uint32_t stored in `record.value`. Returns error if the
+// record.value is not a uint32_t set.
+template <>
+absl::StatusOr<std::vector<uint32_t>> MaybeGetRecordValue(
+    const KeyValueMutationRecord& record);
+
+// Returns the vector of uint64_t stored in `record.value`. Returns error if the
+// record.value is not a uint64_t set.
+template <>
+absl::StatusOr<std::vector<uint64_t>> MaybeGetRecordValue(
     const KeyValueMutationRecord& record);
 
 }  // namespace kv_server

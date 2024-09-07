@@ -17,6 +17,8 @@
 #ifndef COMPONENTS_DATA_SERVER_REQUEST_HANDLER_GET_VALUES_V2_HANDLER_H_
 #define COMPONENTS_DATA_SERVER_REQUEST_HANDLER_GET_VALUES_V2_HANDLER_H_
 
+#include <map>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -25,7 +27,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "components/data_server/cache/cache.h"
-#include "components/data_server/request_handler/compression.h"
+#include "components/data_server/request_handler/compression/compression.h"
 #include "components/telemetry/server_definition.h"
 #include "components/udf/udf_client.h"
 #include "components/util/request_context.h"
@@ -36,20 +38,35 @@
 
 namespace kv_server {
 
-// Content Type Header Name. Can be set for bhttp request to proto or json
+// Content Type Header Name. Can be set for ohttp request to proto or json
 // values below.
 inline constexpr std::string_view kContentTypeHeader = "content-type";
+// Header in clear text http request/response that indicates which format is
+// used by the payload. The more common "Content-Type" header is not used
+// because most importantly that has CORS implications, and in addition, may not
+// be forwarded by Envoy to gRPC.
+inline constexpr std::string_view kKVContentTypeHeader = "kv-content-type";
 // Protobuf Content Type Header Value.
 inline constexpr std::string_view kContentEncodingProtoHeaderValue =
-    "application/protobuf";
+    "message/ad-auction-trusted-signals-request+proto";
 // Json Content Type Header Value.
 inline constexpr std::string_view kContentEncodingJsonHeaderValue =
-    "application/json";
+    "message/ad-auction-trusted-signals-request+json";
+inline constexpr std::string_view kContentEncodingCborHeaderValue =
+    "message/ad-auction-trusted-signals-request";
+
+bool IsSinglePartitionUseCase(const v2::GetValuesRequest& request);
 
 // Handles the request family of *GetValues.
 // See the Service proto definition for details.
 class GetValuesV2Handler {
  public:
+  enum class ContentType { kCbor = 0, kJson = 1, kProto = 2 };
+
+  static GetValuesV2Handler::ContentType GetContentType(
+      const std::multimap<grpc::string_ref, grpc::string_ref>& headers,
+      ContentType default_content_type);
+
   // Accepts a functor to create compression blob builder for testing purposes.
   explicit GetValuesV2Handler(
       const UdfClient& udf_client,
@@ -63,15 +80,18 @@ class GetValuesV2Handler {
             std::move(create_compression_group_concatenator)),
         key_fetcher_manager_(key_fetcher_manager) {}
 
-  grpc::Status GetValuesHttp(const v2::GetValuesHttpRequest& request,
-                             google::api::HttpBody* response) const;
+  grpc::Status GetValuesHttp(
+      RequestContextFactory& request_context_factory,
+      const std::multimap<grpc::string_ref, grpc::string_ref>& headers,
+      const v2::GetValuesHttpRequest& request, google::api::HttpBody* response,
+      ExecutionMetadata& execution_metadata) const;
 
-  grpc::Status GetValues(const v2::GetValuesRequest& request,
-                         v2::GetValuesResponse* response) const;
-
-  grpc::Status BinaryHttpGetValues(
-      const v2::BinaryHttpGetValuesRequest& request,
-      google::api::HttpBody* response) const;
+  grpc::Status GetValues(RequestContextFactory& request_context_factory,
+                         const v2::GetValuesRequest& request,
+                         v2::GetValuesResponse* response,
+                         ExecutionMetadata& execution_metadata,
+                         bool single_partition_use_case,
+                         ContentType content_type) const;
 
   // Supports requests encrypted with a fixed key for debugging/demoing.
   // X25519 Secret key (priv key).
@@ -84,36 +104,36 @@ class GetValuesV2Handler {
   // HPKE Configuration must be:
   // KEM: DHKEM(X25519, HKDF-SHA256) 0x0020
   // KDF: HKDF-SHA256 0x0001
-  // AEAD: AES-128-GCM 0X0001
+  // AEAD: AES-256-GCM 0X0002
   // (https://github.com/WICG/turtledove/blob/main/FLEDGE_Key_Value_Server_API.md#encryption)
-  grpc::Status ObliviousGetValues(const v2::ObliviousGetValuesRequest& request,
-                                  google::api::HttpBody* response) const;
+  //
+  // The default content type for OHTTP is cbor.
+  grpc::Status ObliviousGetValues(
+      RequestContextFactory& request_context_factory,
+      const std::multimap<grpc::string_ref, grpc::string_ref>& headers,
+      const v2::ObliviousGetValuesRequest& request,
+      google::api::HttpBody* response,
+      ExecutionMetadata& execution_metadata) const;
 
  private:
-  enum class ContentType {
-    kJson = 0,
-    kProto,
-  };
-  ContentType GetContentType(
-      const quiche::BinaryHttpRequest& deserialized_req) const;
-
   absl::Status GetValuesHttp(
-      std::string_view request, std::string& json_response,
+      RequestContextFactory& request_context_factory, std::string_view request,
+      std::string& json_response, ExecutionMetadata& execution_metadata,
       ContentType content_type = ContentType::kJson) const;
 
-  // On success, returns a BinaryHttpResponse with a successful response. The
-  // reason that this is a separate function is so that the error status
-  // returned from here can be encoded as a BinaryHTTP response code. So even if
-  // this function fails, the final grpc code may still be ok.
-  absl::StatusOr<quiche::BinaryHttpResponse>
-  BuildSuccessfulGetValuesBhttpResponse(
-      std::string_view bhttp_request_body) const;
+  // Invokes UDF to process one partition.
+  absl::Status ProcessOnePartition(
+      const RequestContextFactory& request_context_factory,
+      const google::protobuf::Struct& req_metadata,
+      const v2::RequestPartition& req_partition,
+      v2::ResponsePartition& resp_partition,
+      ExecutionMetadata& execution_metadata) const;
 
-  // Returns error only if the response cannot be serialized into Binary HTTP
-  // response. For all other failures, the error status will be inside the
-  // Binary HTTP message.
-  absl::Status BinaryHttpGetValues(std::string_view bhttp_request_body,
-                                   std::string& response) const;
+  // Invokes UDF to process multiple partitions.
+  absl::Status ProcessMultiplePartitions(
+      const RequestContextFactory& request_context_factory,
+      const v2::GetValuesRequest& request, v2::GetValuesResponse& response,
+      ExecutionMetadata& execution_metadata, ContentType content_type) const;
 
   // Invokes UDF to process one partition.
   void ProcessOnePartition(RequestContext request_context,

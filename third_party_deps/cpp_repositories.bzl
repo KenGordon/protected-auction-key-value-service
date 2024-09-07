@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 
 def cpp_repositories():
     """Entry point for all external repositories used for C++/C dependencies."""
@@ -23,9 +23,9 @@ def cpp_repositories():
         repo_mapping = {
             "@org_brotli": "@brotli",
         },
-        sha256 = "32f303a9b0b6e07101a7a95a4cc364fb4242f0f7431de5da1a2e0ee61f5924c5",
-        strip_prefix = "riegeli-562f26cbb685aae10b7d32e32fb53d2e42a5d8c2",
-        url = "https://github.com/google/riegeli/archive/562f26cbb685aae10b7d32e32fb53d2e42a5d8c2.zip",
+        sha256 = "0aad9af403e5f394cf30330658a361c622a0155499d8726112b8fb1716750cf9",
+        strip_prefix = "riegeli-0bf809f36ae5be8a5684f63d8238b5440b42bbec",
+        url = "https://github.com/google/riegeli/archive/0bf809f36ae5be8a5684f63d8238b5440b42bbec.zip",
     )
 
     #external deps for riegeli
@@ -89,4 +89,27 @@ def cpp_repositories():
         urls = [
             "https://github.com/apache/avro/archive/release-1.10.2.tar.gz",
         ],
+    )
+
+    ### Roaring Bitmaps
+    http_archive(
+        name = "roaring_bitmap",
+        build_file = "//third_party_deps:roaring.BUILD",
+        sha256 = "c7b0e36dfeaca0d951b2842a747ddf6fec95355abba5970511bb68d698e10a90",
+        strip_prefix = "CRoaring-3.0.1",
+        urls = [
+            "https://github.com/RoaringBitmap/CRoaring/archive/refs/tags/v3.0.1.zip",
+        ],
+    )
+
+    http_file(
+        name = "otel_collector_aarch64",
+        url = "https://aws-otel-collector.s3.amazonaws.com/amazon_linux/arm64/v0.40.0/aws-otel-collector.rpm",
+        sha256 = "c1860bac86d2c8b21a7448bb41b548589f3a65507f7768be94a9bf36ec188801",
+    )
+
+    http_file(
+        name = "otel_collector_amd64",
+        url = "https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/v0.40.0/aws-otel-collector.rpm",
+        sha256 = "3d3837ad0b0a32b905b94713ab3534eb58c377cf211a9c75d89d39f35b0f4152",
     )

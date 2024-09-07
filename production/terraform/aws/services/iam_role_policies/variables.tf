@@ -59,6 +59,12 @@ variable "sharding_key_regex_arns" {
   type        = set(string)
 }
 
+variable "consented_debug_token_arns" {
+  description = "A set of arns for consented debug token"
+  type        = set(string)
+}
+
+
 variable "sns_data_updates_topic_arn" {
   description = "ARN for the sns topic that receives s3 delta file updates."
   type        = string
@@ -66,6 +72,11 @@ variable "sns_data_updates_topic_arn" {
 
 variable "sns_realtime_topic_arn" {
   description = "ARN for the sns topic that receives realtime updates."
+  type        = string
+}
+
+variable "logging_verbosity_updates_topic_arn" {
+  description = "ARN for the sns topic that receives logging verbosity parameter updates."
   type        = string
 }
 

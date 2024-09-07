@@ -61,7 +61,7 @@ data "aws_iam_policy_document" "instance_policy_doc" {
     sid       = "AllowInstancesToReadParameters"
     actions   = ["ssm:GetParameter"]
     effect    = "Allow"
-    resources = setunion(var.server_parameter_arns, var.coordinator_parameter_arns, var.metrics_collector_endpoint_arns, var.sharding_key_regex_arns)
+    resources = setunion(var.server_parameter_arns, var.coordinator_parameter_arns, var.metrics_collector_endpoint_arns, var.sharding_key_regex_arns, var.consented_debug_token_arns)
   }
   statement {
     sid       = "AllowInstancesToAssumeRole"
@@ -90,6 +90,11 @@ data "aws_iam_policy_document" "instance_policy_doc" {
     sid       = "AllowInstancesToSubscribeToRealtimeDataUpdates"
     actions   = ["sns:Subscribe"]
     resources = [var.sns_realtime_topic_arn]
+  }
+  statement {
+    sid       = "AllowInstancesToSubscribeToLoggingVerbosityParameterUpdates"
+    actions   = ["sns:Subscribe"]
+    resources = [var.logging_verbosity_updates_topic_arn]
   }
   statement {
     sid = "AllowXRay"
@@ -126,6 +131,16 @@ data "aws_iam_policy_document" "instance_policy_doc" {
     ]
     resources = ["*"]
   }
+  statement {
+    sid = "AllowInstancesToSetInstanceHealthForASGandCloudMap"
+    actions = [
+      "autoscaling:SetInstanceHealth",
+      "servicediscovery:UpdateInstanceCustomHealthStatus",
+      "servicediscovery:DeregisterInstance",
+    ]
+    effect    = "Allow"
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "instance_policy" {
@@ -136,6 +151,11 @@ resource "aws_iam_policy" "instance_policy" {
 resource "aws_iam_role_policy_attachment" "instance_role_policy_attachment" {
   policy_arn = aws_iam_policy.instance_policy.arn
   role       = var.server_instance_role_name
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_instance_role_attachment" {
+  role       = var.server_instance_role_name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 # Set up access policies for the SQS cleanup lambda function.

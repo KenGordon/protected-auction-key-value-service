@@ -7,17 +7,19 @@ local_repository(
     path = "testing/functionaltest-system",
 )
 
-load("//builders/bazel:deps.bzl", "python_deps")
+load("//builders/bazel:deps.bzl", "python_deps", "python_register_toolchains")
 
-python_deps("//builders/bazel")
+python_deps()
+
+python_register_toolchains("//builders/bazel")
 
 http_archive(
     name = "google_privacysandbox_servers_common",
-    # commit b34fe82 2024-04-03
-    sha256 = "2afc7017723efb9d34b6ed713be03dbdf9b45de8ba585d2ea314eb3a52903d0a",
-    strip_prefix = "data-plane-shared-libraries-b34fe821b982e06446df617edb7a6e3041c8b0db",
+    # commit 9c5c93e 2024-08-23
+    sha256 = "915e837fcfeab97341ccb628b2bd7481559921909aa5f7271b95160b4f724b19",
+    strip_prefix = "data-plane-shared-libraries-9c5c93ef58d3fb174f785c0cdc0802c7e72bf4fb",
     urls = [
-        "https://github.com/privacysandbox/data-plane-shared-libraries/archive/b34fe821b982e06446df617edb7a6e3041c8b0db.zip",
+        "https://github.com/privacysandbox/data-plane-shared-libraries/archive/9c5c93ef58d3fb174f785c0cdc0802c7e72bf4fb.zip",
     ],
 )
 
@@ -86,6 +88,16 @@ http_archive(
     sha256 = "19cd27b36b0ceba683c02fc6c80e61339397afc3385b91d54210c5db0a254ef8",
     strip_prefix = "distributed_point_functions-45da5f54836c38b73a1392e846c9db999c548711",
     urls = ["https://github.com/google/distributed_point_functions/archive/45da5f54836c38b73a1392e846c9db999c548711.tar.gz"],
+)
+
+http_archive(
+    name = "libcbor",
+    build_file = "//third_party_deps:libcbor.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//third_party_deps:libcbor.patch"],
+    sha256 = "9fec8ce3071d5c7da8cda397fab5f0a17a60ca6cbaba6503a09a47056a53a4d7",
+    strip_prefix = "libcbor-0.10.2/src",
+    urls = ["https://github.com/PJK/libcbor/archive/refs/tags/v0.10.2.zip"],
 )
 
 # Dependencies for Flex/Bison build rules

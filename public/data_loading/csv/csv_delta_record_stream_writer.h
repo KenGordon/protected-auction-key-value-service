@@ -18,7 +18,6 @@
 #define PUBLIC_DATA_LOADING_CSV_CSV_DELTA_RECORD_STREAM_WRITER_H_
 
 #include <utility>
-#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -107,17 +106,16 @@ riegeli::CsvWriterBase::Options GetRecordWriterOptions(
     const typename CsvDeltaRecordStreamWriter<DestStreamT>::Options& options) {
   riegeli::CsvWriterBase::Options writer_options;
   writer_options.set_field_separator(options.field_separator);
-  std::vector<std::string_view> header;
+  riegeli::CsvHeader header;
   switch (options.record_type) {
     case DataRecordType::kKeyValueMutationRecord:
-      header =
-          std::vector<std::string_view>(kKeyValueMutationRecordHeader.begin(),
-                                        kKeyValueMutationRecordHeader.end());
+      header = *kKeyValueMutationRecordHeader;
       break;
     case DataRecordType::kUserDefinedFunctionsConfig:
-      header = std::vector<std::string_view>(
-          kUserDefinedFunctionsConfigHeader.begin(),
-          kUserDefinedFunctionsConfigHeader.end());
+      header = *kUserDefinedFunctionsConfigHeader;
+      break;
+    case DataRecordType::kShardMappingRecord:
+      header = *kShardMappingRecordHeader;
       break;
     case DataRecordType::kShardMappingRecord:
       header = std::vector<std::string_view>(kShardMappingRecordHeader.begin(),
@@ -154,7 +152,7 @@ absl::Status CsvDeltaRecordStreamWriter<DestStreamT>::WriteRecord(
 
 template <typename DestStreamT>
 absl::Status CsvDeltaRecordStreamWriter<DestStreamT>::Flush() {
-  record_writer_.dest_writer()->Flush();
+  record_writer_.dest().Flush();
   return record_writer_.status();
 }
 

@@ -30,6 +30,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
         "@google_privacysandbox_servers_common//src/telemetry:telemetry_provider",
     ],
 )
@@ -75,11 +76,13 @@ cc_library(
     name = "blob_storage_client",
     srcs = select({
         "//:aws_platform": ["blob_storage_client_s3.cc"],
+        "//:azure_platform": ["blob_storage_client_local.cc"],
         "//:gcp_platform": ["blob_storage_client_gcp.cc"],
         "//:local_platform": ["blob_storage_client_local.cc"],
     }),
     hdrs = select({
         "//:aws_platform": ["blob_storage_client_s3.h"],
+        "//:azure_platform": ["blob_storage_client_local.h"],
         "//:gcp_platform": ["blob_storage_client_gcp.h"],
         "//:local_platform": ["blob_storage_client_local.h"],
     }) + ["blob_storage_client.h"],
@@ -101,6 +104,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
     ],
 )
 
@@ -109,6 +113,7 @@ cc_test(
     size = "small",
     srcs = select({
         "//:aws_platform": ["blob_storage_client_s3_test.cc"],
+        "//:azure_platform": ["blob_storage_client_local_test.cc"],
         "//:gcp_platform": ["blob_storage_client_gcp_test.cc"],
         "//:local_platform": ["blob_storage_client_local_test.cc"],
     }),
@@ -142,6 +147,7 @@ cc_library(
         "//:aws_platform": [
             "blob_storage_change_notifier_s3.cc",
         ],
+        "//:azure_platform": ["blob_storage_change_notifier_local.cc"],
         "//:gcp_platform": ["blob_storage_change_notifier_gcp.cc"],
         "//:local_platform": ["blob_storage_change_notifier_local.cc"],
     }),
@@ -168,6 +174,7 @@ cc_test(
         "//:aws_platform": [
             "blob_storage_change_notifier_s3_test.cc",
         ],
+        "//:azure_platform": ["blob_storage_change_notifier_local_test.cc"],
         "//:gcp_platform": ["blob_storage_change_notifier_gcp_test.cc"],
         "//:local_platform": ["blob_storage_change_notifier_local_test.cc"],
     }),
@@ -176,6 +183,8 @@ cc_test(
             "//components/errors:aws_error_util",
             "//components/util:platform_initializer",
             "@aws_sdk_cpp//:sqs",
+        ],
+        "//:azure_platform": [
         ],
         "//:gcp_platform": [
         ],

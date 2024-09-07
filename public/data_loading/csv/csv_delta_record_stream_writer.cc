@@ -16,7 +16,6 @@
 
 #include "public/data_loading/csv/csv_delta_record_stream_writer.h"
 
-#include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -52,16 +51,19 @@ std::string MaybeEncode(std::string_view value,
   return std::string(value);
 }
 
-std::vector<std::string> MaybeEncode(std::vector<std::string_view> values,
+template <typename ElementType>
+std::vector<std::string> MaybeEncode(std::vector<ElementType> values,
                                      const CsvEncoding& csv_encoding) {
+  std::vector<std::string> result;
   if (csv_encoding == CsvEncoding::kBase64) {
-    std::vector<std::string> result;
     for (auto&& value : values) {
-      result.push_back(absl::Base64Escape(value));
+      result.push_back(absl::Base64Escape(absl::StrCat(value)));
     }
     return result;
   }
-  return std::vector<std::string>(values.begin(), values.end());
+  std::transform(values.begin(), values.end(), std::back_inserter(result),
+                 [](const auto elem) { return absl::StrCat(elem); });
+  return result;
 }
 
 absl::StatusOr<ValueStruct> GetRecordValue(
@@ -84,6 +86,20 @@ absl::StatusOr<ValueStruct> GetRecordValue(
                                      value_separator),
           };
         }
+        if constexpr (std::is_same_v<VariantT, std::vector<uint32_t>>) {
+          return ValueStruct{
+              .value_type = std::string(kValueTypeUInt32Set),
+              .value = absl::StrJoin(MaybeEncode(arg, csv_encoding),
+                                     value_separator),
+          };
+        }
+        if constexpr (std::is_same_v<VariantT, std::vector<uint64_t>>) {
+          return ValueStruct{
+              .value_type = std::string(kValueTypeUInt64Set),
+              .value = absl::StrJoin(MaybeEncode(arg, csv_encoding),
+                                     value_separator),
+          };
+        }
         return absl::InvalidArgumentError("Value must be set.");
       },
       value);
@@ -100,7 +116,7 @@ absl::StatusOr<riegeli::CsvRecord> MakeCsvRecordWithKVMutation(
   const auto record =
       std::get<KeyValueMutationRecordStruct>(data_record.record);
 
-  riegeli::CsvRecord csv_record(kKeyValueMutationRecordHeader);
+  riegeli::CsvRecord csv_record(*kKeyValueMutationRecordHeader);
   csv_record[kKeyColumn] = record.key;
   absl::StatusOr<ValueStruct> value = GetRecordValue(
       record.value, std::string(1, value_separator), csv_encoding);
@@ -141,7 +157,8 @@ absl::StatusOr<riegeli::CsvRecord> MakeCsvRecordWithUdfConfig(
   const auto udf_config =
       std::get<UserDefinedFunctionsConfigStruct>(data_record.record);
 
-  riegeli::CsvRecord csv_record(kUserDefinedFunctionsConfigHeader);
+  riegeli::CsvRecord csv_record(*kUserDefinedFunctionsConfigHeader);
+
   csv_record[kCodeSnippetColumn] = udf_config.code_snippet;
   csv_record[kHandlerNameColumn] = udf_config.handler_name;
   csv_record[kLogicalCommitTimeColumn] =
@@ -164,7 +181,7 @@ absl::StatusOr<riegeli::CsvRecord> MakeCsvRecordWithShardMapping(
   }
   const auto shard_mapping_struct =
       std::get<ShardMappingRecordStruct>(data_record.record);
-  riegeli::CsvRecord csv_record(kShardMappingRecordHeader);
+  riegeli::CsvRecord csv_record(*kShardMappingRecordHeader);
   csv_record[kLogicalShardColumn] =
       absl::StrCat(shard_mapping_struct.logical_shard);
   csv_record[kPhysicalShardColumn] =

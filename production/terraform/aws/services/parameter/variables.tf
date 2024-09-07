@@ -134,6 +134,16 @@ variable "logging_verbosity_level_parameter_value" {
   type        = number
 }
 
+variable "logging_verbosity_update_sns_arn_parameter_value" {
+  description = "Value for the logging verbosity update SNS ARN parameter."
+  type        = string
+}
+
+variable "logging_verbosity_backup_poll_frequency_secs_parameter_value" {
+  description = "Backup poll frequency in seconds for the logging verbosity parameter"
+  type        = number
+}
+
 variable "use_sharding_key_regex_parameter_value" {
   description = "Use sharding key regex. This is useful if you want to use data locality feature for sharding."
   type        = bool
@@ -146,6 +156,11 @@ variable "sharding_key_regex_parameter_value" {
 
 variable "udf_timeout_millis_parameter_value" {
   description = "UDF execution timeout in milliseconds."
+  type        = number
+}
+
+variable "udf_update_timeout_millis_parameter_value" {
+  description = "UDF update timeout in milliseconds."
   type        = number
 }
 
@@ -187,4 +202,14 @@ variable "secondary_coordinator_region_parameter_value" {
 variable "public_key_endpoint_parameter_value" {
   description = "Public key endpoint. Can only be overriden in non-prod mode."
   type        = string
+}
+
+variable "consented_debug_token_parameter_value" {
+  description = "Consented debug token to enable the otel collection of consented logs. Empty token means no-op and no logs will be collected for consented requests. The token in the request's consented debug configuration needs to match this debug token to make the server treat the request as consented."
+  type        = string
+}
+
+variable "enable_consented_log_parameter_value" {
+  description = "Enable the logging of consented requests. If it is set to true, the consented debug token parameter value must not be an empty string."
+  type        = bool
 }

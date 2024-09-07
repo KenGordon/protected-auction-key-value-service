@@ -25,6 +25,9 @@ cc_library(
         "//:aws_platform": [
             "delta_file_record_change_notifier_aws.cc",
         ],
+        "//:azure_platform": [
+            "delta_file_record_change_notifier_local.cc",
+        ],
         "//:local_platform": [
             "delta_file_record_change_notifier_local.cc",
         ],
@@ -51,6 +54,7 @@ cc_test(
         "//:aws_platform": [
             "delta_file_record_change_notifier_aws_test.cc",
         ],
+        "//:azure_platform": ["delta_file_record_change_notifier_local_test.cc"],
         "//:local_platform": ["delta_file_record_change_notifier_local_test.cc"],
     }),
     data = [
@@ -101,6 +105,7 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@google_privacysandbox_servers_common//src/logger:request_context_logger",
     ],
 )
 
@@ -152,6 +157,7 @@ cc_library(
     ],
 )
 
+# TODO: Azure. Add a test implementation.
 cc_test(
     name = "realtime_thread_pool_manager_test",
     size = "small",
