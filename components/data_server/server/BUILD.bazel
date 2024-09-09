@@ -35,6 +35,7 @@ cc_library(
     name = "parameter_fetcher",
     srcs = select({
         "//:aws_platform": ["parameter_fetcher_aws.cc"],
+        "//:azure_platform": ["parameter_fetcher_local.cc"],
         "//:gcp_platform": ["parameter_fetcher_gcp.cc"],
         "//:local_platform": ["parameter_fetcher_local.cc"],
     }) + ["parameter_fetcher.cc"],
@@ -62,6 +63,7 @@ cc_test(
     size = "small",
     srcs = select({
         "//:aws_platform": ["parameter_fetcher_aws_test.cc"],
+        "//:azure_platform": ["parameter_fetcher_local_test.cc"],
         "//:gcp_platform": ["parameter_fetcher_gcp_test.cc"],
         "//:local_platform": ["parameter_fetcher_local_test.cc"],
     }),
@@ -187,6 +189,7 @@ cc_test(
     size = "small",
     srcs = select({
         "//:aws_platform": ["server_aws_test.cc"],
+        "//:azure_platform": ["server_local_test.cc"],
         "//:gcp_platform": ["server_gcp_test.cc"],
         "//:local_platform": ["server_local_test.cc"],
     }),
@@ -271,6 +274,9 @@ cc_library(
         "//:aws_prod": [
             "key_fetcher_factory_aws.cc",
             "key_fetcher_factory_cloud.cc",
+        ],
+        "//:azure_platform": [
+            "key_fetcher_factory_local.cc",
         ],
         "//:gcp_nonprod": [
             "key_fetcher_factory_cloud.cc",

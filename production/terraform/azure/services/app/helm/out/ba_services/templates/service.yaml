@@ -1,0 +1,62 @@
+---
+# Source: ba_services/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: bidding-service-lb
+  namespace: default
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    external-dns.alpha.kubernetes.io/hostname: bidding-service.adsapi.microsoft
+    external-dns.alpha.kubernetes.io/internal-hostname: bidding-service-clusterip.adsapi.microsoft
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 50057
+  selector:
+    app: bidding-service-app
+---
+# Source: ba_services/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: bfe-lb
+  namespace: default
+  annotations:
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 50051
+  selector:
+    app: bfe-app
+---
+# Source: ba_services/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auction-service-lb
+  namespace: default
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    external-dns.alpha.kubernetes.io/hostname: auction-service.adsapi.microsoft
+    external-dns.alpha.kubernetes.io/internal-hostname: auction-service-clusterip.adsapi.microsoft
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 50061
+  selector:
+    app: auction-service-app
+---
+# Source: ba_services/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sfe-lb
+  namespace: default
+  annotations:
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 50053
+  selector:
+    app: sfe-app
