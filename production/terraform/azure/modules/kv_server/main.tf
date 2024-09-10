@@ -67,5 +67,6 @@ module "file_storage" {
   source                = "../../services/file_storage"
   resource_group_id     = module.resource_group.id
   resource_group_name   = module.resource_group.name
+  region                = var.region
 }
 

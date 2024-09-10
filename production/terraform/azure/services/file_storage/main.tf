@@ -24,7 +24,7 @@ resource "random_string" "random" {
 ## https://docs.microsoft.com/en-us/azure/storage/common/storage-account-overview
 ## Create a File Storage Account 
 resource "azurerm_storage_account" "storage" {
-  name                     = "kv-storage-${random_string.random.id}"
+  name                     = "kvstorage${random_string.random.id}"
   resource_group_name      = var.resource_group_name
   location                 = var.region
   account_tier             = "Premium"
